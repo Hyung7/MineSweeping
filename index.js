@@ -23,7 +23,7 @@ table.onmousedown = function (e) {
   if (game.state !== "over") {
     var x = e.target.parentElement.rowIndex;
     var y = e.target.cellIndex;
-    // 点击鼠标左键打开小方块， 点击鼠标右键插旗/标问好
+    // 点击鼠标左键打开小方块， 点击鼠标右键插旗/标问号
     if (e.button === 0 && td[x][y].state === "normal") {
       mine.method.open.call(td[x][y], x, y);
     } else if (e.button === 2 && td[x][y].state !== "open") {
@@ -47,17 +47,13 @@ face.onmousedown = function () {
 }
 
 
-function Square(tag, parent) {
+function Square(tag) {
   this.mine = false; // 是否是雷
   this.flage = false; // 是否插旗
   this.count = 0; // 周围雷数量
   this.state = "normal"; // 状态（normal: 正常, flag: 插旗, ask: 问号, open: 打开）
-  this.parent = parent; // 父级元素
   this.ele = document.createElement(tag);
   this.ele.className = "normal";
-}
-Square.prototype.create = function () {
-  this.parent.appendChild(this.ele);
 }
 // 改变小方块状态
 Square.prototype.changeState = function () {
@@ -78,134 +74,122 @@ Square.prototype.changeState = function () {
 }
 
 function Mine() {
-  this.mine = []; // 所有雷坐标
-  // this.flag = [];     // 所有旗坐标
-  this.open = 81; // 未打开的小方块数量
+  this.mines = []; // 所有雷坐标
+  this.notOpen = 81; // 未打开的小方块数量
 }
 // 初始化
 Mine.prototype.init = function () {
   // 插入9*9的表格
+  var fragment = document.createDocumentFragment(); // 创建文档碎片
   for (var i = 0; i < 9; i++) {
     tr[i] = new Square("tr", table);
-    tr[i].create();
     td[i] = [];
     for (var j = 0; j < 9; j++) {
       td[i][j] = new Square("td", tr[i].ele);
-      td[i][j].create();
+      tr[i].ele.appendChild(td[i][j].ele);
     }
+    fragment.appendChild(tr[i].ele);
   }
+  table.appendChild(fragment);
   this.setMine();
 }
-// 是否与已有雷重复
-Mine.prototype.isRepeat = function (mine) {
-  for (var i = 0; i < this.mine.length; i++) {
-    if (mine[0] === this.mine[i][0] && mine[1] === this.mine[i][1]) {
-      return true;
-    }
-  }
-  return false;
-}
-// 设置10个雷
+// 设置10个不重复的雷
 Mine.prototype.setMine = function () {
-  var mine = [];
-  for (var i = 0; i < 10; i++) {
-    do {
-      mine[0] = Math.floor(Math.random() * 9);
-      mine[1] = Math.floor(Math.random() * 9);
+  var mines = this.mines;
+  for (var i = 0; i < 9; i++) {
+    for (var j = 0; j < 9; j++) {
+      mines[mines.length] = [i, j];
     }
-    while (this.isRepeat(mine));
-    this.mine[i] = [];
-    this.mine[i][0] = mine[0];
-    this.mine[i][1] = mine[1];
-    td[mine[0]][mine[1]].mine = true;
-    this.setCount(mine[0], mine[1]);
   }
+  mines.sort(function () {
+    return Math.random() - 0.5;
+  })
+  mines = mines.slice(0, 10);
+  mines.forEach(function (m) {
+    td[m[0]][m[1]].mine = true;
+    var around = [];
+    around = mine.getAround(m[0], m[1]);
+    around.forEach(function (square) {
+      td[square[0]][square[1]].count++;
+    })
+  })
 }
-// 更新每个小方块周围雷的个数
-Mine.prototype.setCount = function (x, y) {
-  td[x - 1] && td[x - 1][y - 1] && td[x - 1][y - 1].count++;
-  td[x - 1] && td[x - 1][y] && td[x - 1][y].count++;
-  td[x - 1] && td[x - 1][y + 1] && td[x - 1][y + 1].count++;
-  td[x] && td[x][y - 1] && td[x][y - 1].count++;
-  td[x] && td[x][y + 1] && td[x][y + 1].count++;
-  td[x + 1] && td[x + 1][y - 1] && td[x + 1][y - 1].count++;
-  td[x + 1] && td[x + 1][y] && td[x + 1][y].count++;
-  td[x + 1] && td[x + 1][y + 1] && td[x + 1][y + 1].count++;
-}
-// 打开周围小方块
-Mine.prototype.openSquare = function (x, y) {
-  this.isOpen(x - 1, y - 1);
-  this.isOpen(x - 1, y);
-  this.isOpen(x - 1, y + 1);
-  this.isOpen(x, y - 1);
-  this.isOpen(x, y + 1);
-  this.isOpen(x + 1, y - 1);
-  this.isOpen(x + 1, y);
-  this.isOpen(x + 1, y + 1);
-}
-// 是否打开小方块
-Mine.prototype.isOpen = function (x, y) {
-  td[x] && td[x][y] && td[x][y].state !== "open" && this.method.open.call(td[x][y], x, y);
+// 找到周围小方块
+Mine.prototype.getAround = function (x, y) {
+  var square = [];
+  for (var i = x - 1; i <= x + 1; i++) {
+    for (var j = y - 1; j <= y + 1; j++) {
+      if (i >= 0 && i < 9 && j >= 0 && j < 9 && td[i][j].state !== "open") {
+        square.push([i, j]);
+      }
+    }
+  }
+  return square;
 }
 // 是否通关
 Mine.prototype.isSuccess = function () {
-  if (this.open === 10) {
+  if (this.notOpen === 10) {
     this.method.success();
   }
 }
 Mine.prototype.method = {
   // 打开小方块
   open: function (x, y) {
-    this.state = "open";
-    if (this.mine) {
-      this.ele.className = "open mine";
-      if (game.state === "start") {
-        this.ele.style.backgroundColor = "#FF0000";
-        mine.method.fail();
-      }
-    } else if (game.state === "over" && this.flag) {
-      this.ele.className = "open error";
-    } else {
-      mine.open--;
-      mine.isSuccess();
-      this.flag = false;
-      this.ele.className = "open";
-      switch (this.count) {
-        case 0:
-          mine.openSquare(x, y);
-          break;
-        case 1:
-          this.ele.innerText = 1;
-          this.ele.style.color = "#0000FF";
-          break;
-        case 2:
-          this.ele.innerText = 2;
-          this.ele.style.color = "#008000";
-          break;
-        case 3:
-          this.ele.innerText = 3;
-          this.ele.style.color = "#FF0000";
-          break;
-        case 4:
-          this.ele.innerText = 4;
-          this.ele.style.color = "#000080";
-          break;
-        case 5:
-          this.ele.innerText = 5;
-          this.ele.style.color = "#800000";
-          break;
-        case 6:
-          this.ele.innerText = 6;
-          this.ele.style.color = "#008080";
-          break;
-        case 7:
-          this.ele.innerText = 7;
-          this.ele.style.color = "#000000";
-          break;
-        case 8:
-          this.ele.innerText = 8;
-          this.ele.style.color = "#808080";
-          break;
+    if (this.state === "normal") {
+      this.state = "open";
+      if (this.mine) {
+        this.ele.className = "open mine";
+        if (game.state === "start") {
+          this.ele.style.backgroundColor = "#FF0000";
+          mine.method.fail();
+        }
+      } else if (game.state === "over" && this.flag) {
+        this.ele.className = "open error";
+      } else {
+        mine.notOpen--;
+        mine.isSuccess();
+        this.flag = false;
+        this.ele.className = "open";
+        switch (this.count) {
+          case 0:
+            var around = mine.getAround(x, y);
+            around.forEach(function (square) {
+              mine.method.open.call(td[square[0]][square[1]], square[0], square[1]);
+            })
+            break;
+          case 1:
+            this.ele.innerText = 1;
+            this.ele.style.color = "#0000FF";
+            break;
+          case 2:
+            this.ele.innerText = 2;
+            this.ele.style.color = "#008000";
+            break;
+          case 3:
+            this.ele.innerText = 3;
+            this.ele.style.color = "#FF0000";
+            break;
+          case 4:
+            this.ele.innerText = 4;
+            this.ele.style.color = "#000080";
+            break;
+          case 5:
+            this.ele.innerText = 5;
+            this.ele.style.color = "#800000";
+            break;
+          case 6:
+            this.ele.innerText = 6;
+            this.ele.style.color = "#008080";
+            break;
+          case 7:
+            this.ele.innerText = 7;
+            this.ele.style.color = "#000000";
+            break;
+          case 8:
+            this.ele.innerText = 8;
+            this.ele.style.color = "#808080";
+            break;
+        }
       }
     }
   },
