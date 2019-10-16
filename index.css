@@ -1,0 +1,112 @@
+@font-face{
+  font-family: "quiveit";
+  src: url("./font/025ddf7fbce041b2_2.ttf");
+}
+
+*{
+  margin: 0;
+  padding: 0;
+}
+
+body{
+  background-color: #ddd;
+}
+
+.wrapper{
+  width: 252px;
+  height: 319px;
+  padding: 10px;
+  background: #C0C0C0;
+  border-left: 5px solid #FFFFFF;
+  border-top: 5px solid #FFFFFF;
+  border-right: 4px solid #808080;
+  border-bottom: 4px solid #808080;
+  margin: 100px auto;
+}
+.head{
+  width: 225px;
+  height: 36px;
+  background-color: #C0C0C0;
+  border-left: 3px solid #808080;
+  border-top: 3px solid #808080;
+  border-right: 4px solid #FFFFFF;
+  border-bottom: 4px solid #FFFFFF;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+}
+.number{
+  width: 66px;
+  height: 36px;
+  background-color: #000;
+  font: normal 42px/30px quiveit;
+  color: #FF0000;
+  text-align: center;
+}
+.count{
+  float: left;
+}
+.face{
+  width: 30px;
+  height: 30px;
+  background: #C0C0C0 url(./img/face_normal.png) no-repeat center center;
+  background-size: 20px 20px;
+  border-left: 3px solid #FFFFFF;
+  border-top: 3px solid #FFFFFF;
+  border-right: 3px solid #808080;
+  border-bottom: 3px solid #808080;
+  margin: 0 auto;
+}
+.face.click{
+  width: 31px;
+  height: 31px;
+  border-left: 3px solid #808080;
+  border-top: 3px solid #808080;
+  border-right: 2px solid #808080;
+  border-bottom: 2px solid #808080;
+}
+.time{
+  float: right;
+}
+table{
+  width: 252px;
+  height: 243px;
+  border-spacing: 0;
+  border-left: 4px solid #808080;
+  border-top: 4px solid #808080;
+  border-right: 5px solid #FFFFFF;
+  border-bottom: 5px solid #FFFFFF;
+  table-layout: fixed;
+}
+td{
+  width: 20px;
+  height: 21px;
+  background-color: #C0C0C0;
+  border-left: 4px solid #FFFFFF;
+  border-top: 4px solid #FFFFFF;
+  border-right: 3px solid #808080;
+  border-bottom: 3px solid #808080;
+}
+td.open,
+td.normal:hover{
+  width: 25px;
+  height: 25px;
+  border-left: 2px solid #808080;
+  border-top: 2px solid #808080;
+  border-right: none;
+  border-bottom: none;
+  font: bolder 20px/25px 'Franklin Gothic Medium', sans-serif;
+  text-align: center;
+  cursor: default;
+}
+td.flag{
+  background: url(./img/flag.png) no-repeat center center;
+}
+td.ask{
+  background: url(./img/ask.png) no-repeat center center;
+}
+td.mine{
+  background: url(./img/mine.png) no-repeat center center;
+}
+td.error{
+  background: url(./img/mine_error.png) no-repeat center center;
+}
