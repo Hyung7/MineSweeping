@@ -3,6 +3,9 @@
 ### 大概思路：
 点击任意小方块开始游戏，开启定时器。左击小方块打开（插旗和问号的小方块不能打开），如果该小方块不为雷且周围雷数不为0则更改小方块样式，显示周围雷数，如果该小方块不为雷且周围雷数为0则调用打开周围小方块，如果该小方块为雷则游戏结束，翻开所有雷和旗，并更改样式。右击小方块插旗/问号/取消旗和问号，每插一个旗雷数量减一，直至为0。每打开一个小方块判断一下游戏是否成功，如果剩余未打开小方块数量为10则游戏成功。点击笑脸则重新开始游戏。
 
+>待完善：  
+可选择难度（初级、中级、高级），难度不同，小方块和雷的数量也不同。
+
 在CSS中引入自定义字体），用来显示剩余雷的数量和时间：  
 方法（IE8 以及更早的版本不支持）：
 ```
@@ -19,17 +22,14 @@
 }
 ```
 
->待完善：  
-可选择难度（初级、中级、高级），难度不同，小方块和雷的数量也不同。
-
 ---
 ### 详细代码：
 #### 一、	变量声明：
 ```
 var game = null, // game的实例
-  	mine = null; // mine的实例
+  mine = null; // mine的实例
 var tr = [], // 行
-  	td = []; // 列
+  td = []; // 列
 ```
 #### 二、	Square构造函数
 ##### 1.	创建构造函数Square，用于创建小方块
@@ -37,8 +37,9 @@ var tr = [], // 行
 function Square(tag) {
   this.mine = false; // 是否是雷
   this.flage = false; // 是否插旗
+  this.ask = false; // 是否画问号
   this.count = 0; // 周围雷数量
-  this.state = "normal"; // 状态（normal: 正常, flag: 插旗, ask: 问号, open: 打开）
+  this.state = "normal"; // 状态（normal: 正常, open: 打开）
   this.ele = document.createElement(tag); // Element元素
   this.ele.className = "normal"; // 类名
 }
@@ -46,19 +47,18 @@ function Square(tag) {
 ##### 2.	在Square的原型上创建changeState方法，用于改变小方块样式和状态
 ```
 Square.prototype.changeState = function () {
-  if (this.state === "normal") { // 如果是state为normal，则改为flag
-    this.state = "flag"; // 更新小方块状态
-    this.ele.className = "flag"; // 改变小方块样式
-    this.flag = true; // 更新flag值
-    game.setCount(-1); // 修改雷的数量
-  } else if (this.state === "flag") { // 如果是state为flag，则改为ask
-    this.state = "ask";
-    this.ele.className = "ask"
+  if (this.flag) { // 如果是旗，则改为问号
+    this.ask = true;
     this.flag = false;
+    this.ele.className = "ask";
     game.setCount(1);
-  } else if (this.state === "ask") { // 如果是state为ask，则改为normal
-    this.state = "normal";
+  } else if (this.ask) { // 如果是问号，则去掉
+    this.ask = false;
     this.ele.className = "normal";
+  } else { // 如果空白，则插旗
+    this.flag = true; // 更新flag值
+    this.ele.className = "flag"; // 改变小方块样式
+    game.setCount(-1); // 修改雷的数量
   }
 }
 ```
@@ -66,7 +66,6 @@ Square.prototype.changeState = function () {
 ##### 1.	创建Mine构造函数，用于存放雷信息
 ```
 function Mine() {
-  this.mines = []; // 所有雷坐标
   this.notOpen = 81; // 未打开的小方块数量
 }
 ```
@@ -91,19 +90,19 @@ Mine.prototype.init = function () {
 ##### 3.	在Mine的原型上创建setMine方法，用于设置10个不重复的雷，并将雷周围小方块的count值+1
 ```
 Mine.prototype.setMine = function () {
-  var mines = this.mines;
+  var pos = []; // 所有小方块坐标
   // 生成9*9个坐标数组, [0,0] - [8,8]
   for (var i = 0; i < 9; i++) {
     for (var j = 0; j < 9; j++) {
-      mines[mines.length] = [i, j];
+      pos[pos.length] = [i, j];
     }
   }
-  // 打乱mines中坐标数组的排序
-  mines.sort(function () {
+  // 打乱pos中坐标数组的排序
+  pos.sort(function () {
     return Math.random() - 0.5;
   })
   // 截取前十个坐标数组
-  mines = mines.slice(0, 10);
+  var mines = pos.slice(0, 10);
   // 遍历10个坐标数组
   mines.forEach(function (m) {
     td[m[0]][m[1]].mine = true; // 将在此坐标的小方块的mine值改为true
@@ -159,6 +158,8 @@ Mine.prototype.method = {
         }
       } else if (game.state === "over" && this.flag) { // 如果游戏状态为over且该方块为状态为flag（旗插错了），则更改该小方块样式
         this.ele.className = "open error";
+      } else if (this.ask || this.flag) {
+        return;
       } else {
         mine.notOpen--; // 未打开小方块数量-1
         mine.isSuccess(); // 判断是否通关
@@ -330,9 +331,9 @@ table.onmousedown = function (e) {
     var x = e.target.parentElement.rowIndex; // 小方块的所在行
     var y = e.target.cellIndex; // 小方块的所在列
     // 点击鼠标左键打开小方块， 点击鼠标右键插旗/标问号
-    if (e.button === 0 && td[x][y].state === "normal") {
+    if (e.button === 0 && td[x][y].state === "normal" && !td[x][y].flag && !td[x][y].ask) {
       mine.method.open.call(td[x][y], x, y); // 打开小方块
-    } else if (e.button === 2 && td[x][y].state !== "open") {
+    } else if (e.button === 2 && td[x][y].state === "normal") {
       td[x][y].changeState(); // 改变小方块状态
     }
   }
