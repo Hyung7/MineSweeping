@@ -26,10 +26,10 @@ table.onmousedown = function (e) {
     var x = e.target.parentElement.rowIndex; // 小方块的所在行
     var y = e.target.cellIndex; // 小方块的所在列
     // 点击鼠标左键打开小方块， 点击鼠标右键插旗/标问号
-    if (e.button === 0 && td[x][y].state === "normal" && !td[x][y].flag && !td[x][y].ask) {
+    if (e.button === 0 && td[x][y].state !== "open" && td[x][y].state !== "flag" && td[x][y].state !== "ask") {
       mine.method.open.call(td[x][y], x, y); // 打开小方块
-    } else if (e.button === 2 && td[x][y].state === "normal") {
-      td[x][y].changeState(); // 改变小方块状态
+    } else if (e.button === 2 && td[x][y].state !== "open") {
+      td[x][y].changeStyle(); // 改变小方块样式
     }
   }
 }
@@ -51,28 +51,25 @@ face.onmousedown = function () {
 
 // Square构造函数
 function Square(tag) {
-  this.mine = false; // 是否是雷
-  this.flage = false; // 是否插旗
-  this.ask = false; // 是否画问号
+  this.isMine = false; // 是否是雷
+  this.state = "normal"; // 小方块状态（normal:正常，flag:插旗，ask:问号, open:打开）
   this.count = 0; // 周围雷数量
-  this.state = "normal"; // 状态（normal: 正常, open: 打开）
   this.ele = document.createElement(tag); // Element元素
   this.ele.className = "normal"; // 类名
 }
 // 改变小方块状态
-Square.prototype.changeState = function () {
-  if (this.flag) { // 如果是旗，则改为问号
-    this.ask = true;
-    this.flag = false;
-    this.ele.className = "ask";
-    game.setCount(1);
-  } else if (this.ask) { // 如果是问号，则去掉
-    this.ask = false;
-    this.ele.className = "normal";
-  } else { // 如果空白，则插旗
-    this.flag = true; // 更新flag值
+Square.prototype.changeStyle = function () {
+  if (this.state === "normal") { // 如果空白，则插旗
+    this.state = "flag"; // 更新状态
     this.ele.className = "flag"; // 改变小方块样式
     game.setCount(-1); // 修改雷的数量
+  }else if (this.state === "flag") { // 如果是旗，则改为问号
+    this.state = "ask";
+    this.ele.className = "ask";
+    game.setCount(1);
+  } else if (this.state === "ask") { // 如果是问号，则去掉
+    this.state = "normal";
+    this.ele.className = "normal";
   }
 }
 
@@ -113,7 +110,7 @@ Mine.prototype.setMine = function () {
   var mines = pos.slice(0, 10);
   // 遍历10个坐标数组
   mines.forEach(function (m) {
-    td[m[0]][m[1]].mine = true; // 将在此坐标的小方块的mine值改为true
+    td[m[0]][m[1]].isMine = true; // 将在此坐标的小方块的mine值改为true
     var around = [];
     // 找到该小方块周围的小方块
     around = mine.getAround(m[0], m[1]);
@@ -147,25 +144,23 @@ Mine.prototype.isSuccess = function () {
 Mine.prototype.method = {
   // 打开小方块
   open: function (x, y) {
-    // 如果小方块状态为normal，则打开小方块
-    if (this.state === "normal") {
-      this.state = "open"; // 更新小方块状态
+    // 如果小方块状态不为open，则打开小方块
+    if (this.state !== "open") {
       // 如果小方块是雷，则游戏结束，并更改小方块样式
-      if (this.mine) {
+      if (this.isMine) {
         this.ele.className = "open mine"; // 更改该小方块样式
         // 如果游戏状态为start（第一次打开雷），则游戏结束，并将该小方块背景颜色设置为红色
         if (game.state === "start") {
           this.ele.style.backgroundColor = "#FF0000";
           mine.method.fail();
         }
-      } else if (game.state === "over" && this.flag) { // 如果游戏状态为over且该方块为状态为flag（旗插错了），则更改该小方块样式
+      } else if (game.state === "over" && this.state === "flag") { // 如果游戏状态为over且方块为状态为flag（旗插错了），则更改该小方块样式
         this.ele.className = "open error";
-      } else if (this.ask || this.flag) {
-        return;
+        console.log(this);
       } else {
+        this.state = "open";// 更新小方块状态
         mine.notOpen--; // 未打开小方块数量-1
         mine.isSuccess(); // 判断是否通关
-        this.flag = false; // flag设置为false（为保证游戏结束时不会改变该小方块样式）
         this.ele.className = "open"; // 改变该小方块样式
         // 根据该小方块的count值（周围雷数量）设置text值和颜色
         switch (this.count) {
@@ -219,7 +214,7 @@ Mine.prototype.method = {
     // 打开所有雷和旗
     for (var i = 0; i < 9; i++) {
       for (var j = 0; j < 9; j++) {
-        if (td[i][j].mine || td[i][j].flag) {
+        if (td[i][j].isMine || td[i][j].state === "flag") {
           this.open.call(td[i][j]);
         }
       }
@@ -283,7 +278,7 @@ Game.prototype.over = function () {
   clearInterval(this.timer); // 清除定时器
   for (var i = 0; i < 9; i++) {
     for (var j = 0; j < 9; j++) {
-      if (td[i][j].state === "normal") {
+      if (td[i][j].ele.className === "normal" ) {
         td[i][j].ele.className = ""; // 通过改变小方块类名取消hover
       }
     }
