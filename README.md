@@ -1,8 +1,8 @@
 # 原生JS实现扫雷
 
 ---
-### 效果图：   
-<img src="https://github.com/Hyung7/MineSweeping/blob/master/pic.gif" height=300 />
+### 效果展示：   
+[https://hyung7.github.io/MineSweeping/](https://hyung7.github.io/MineSweeping/)
 
 ---
 ### 大概思路：
@@ -158,7 +158,6 @@ Mine.prototype.method = {
         }
       } else if (game.state === "over" && this.state === "flag") { // 如果游戏状态为over且方块为状态为flag（旗插错了），则更改该小方块样式
         this.ele.className = "open error";
-        console.log(this);
       } else {
         this.state = "open";// 更新小方块状态
         mine.notOpen--; // 未打开小方块数量-1

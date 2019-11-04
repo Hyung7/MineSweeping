@@ -156,7 +156,6 @@ Mine.prototype.method = {
         }
       } else if (game.state === "over" && this.state === "flag") { // 如果游戏状态为over且方块为状态为flag（旗插错了），则更改该小方块样式
         this.ele.className = "open error";
-        console.log(this);
       } else {
         this.state = "open";// 更新小方块状态
         mine.notOpen--; // 未打开小方块数量-1
